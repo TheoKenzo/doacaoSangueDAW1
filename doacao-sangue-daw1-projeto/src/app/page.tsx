@@ -1,29 +1,40 @@
-"use client"
-import Link from "next/link";
-import { useEffect, useState } from "react";
+'use client'
+import { useEffect, FormEvent, useState } from "react";
 
+interface FormElements extends HTMLFormControlsCollection {
+  texto: HTMLInputElement;
+  inteiro: HTMLInputElement;
+  booleano: HTMLInputElement;
+  seletor: HTMLSelectElement;
+}
+
+interface FormElement extends HTMLFormElement {
+  readonly elements: FormElements;
+}
 
 export default function Home() {
+  const [data, setData] = useState({})
+  useEffect(() => {
+    const form = document.querySelector("form") as FormElement;
 
-  useEffect(()=>{
-    const form = document.querySelector("form");
-    form?.addEventListener('submit', e => {
-        
-        e.preventDefault();
-        const {target: [texto, inteiro, booleano, seletor]} = e;
+    form?.addEventListener("submit", (e: SubmitEvent) => {
+      e.preventDefault();
 
-        const radios = document.querySelector('input[name="radios"]:checked')
+      const texto = document.querySelector<HTMLInputElement>("#texto")?.value;
+      const inteiro = document.querySelector<HTMLInputElement>("#inteiro")?.value;
+      const booleano = document.querySelector<HTMLInputElement>("#booleano")?.checked;
+      const seletor = document.querySelector<HTMLSelectElement>("#seletor")?.value;
+      const radios = document.querySelector<HTMLInputElement>('input[name="radios"]:checked');
+      const labelText = radios?.labels?.[0]?.innerText.replace(" ","_");
 
-        fetch(`/api?text=${texto.value}&inteiro=${inteiro.value}&booleano=${booleano.checked}&radios=${radios.labels[0].innerText.replace(" ","_")}&seletor=${seletor.value}`).then(res => res.json()).then(r => console.log(r));
-  
-        
-        
-    })
-    
+      fetch(`/api?texto=${texto}&inteiro=${inteiro}&booleano=${booleano}&radios=${labelText}&seletor=${seletor}`)
+        .then(res => res.json())
+        .then(r => setData(r));
+    });
+  }, []);
 
-  },[])
   return (
-    <main className="flex flex-col justify-center items-center h-screen">
+    <main className="flex flex-col justify-center items-center h-screen space-y-5">
       <form className="flex flex-col justify-center items-center w-[450px] h-[400px] bg-zinc-100 rounded-lg">
         <div className="flex flex-col justify-center space-y-3">
           <label htmlFor="texto">
@@ -67,6 +78,10 @@ export default function Home() {
           <button type="submit" className="bg-purple-600 text-white rounded-lg">Enviar</button>
         </div>
       </form>
+
+      <pre className="flex flex-col justify-center items-center w-[450px] h-[400px] bg-zinc-100 rounded-lg">
+        {JSON.stringify(data, null, 2)}
+      </pre>
 
     </main>
   );
