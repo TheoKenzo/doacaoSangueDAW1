@@ -38,19 +38,19 @@ export default function Home() {
       <form className="flex flex-col justify-center items-center w-[450px] h-[400px] bg-zinc-100 rounded-lg">
         <div className="flex flex-col justify-center space-y-3">
           <label htmlFor="texto">
-            Texto: <input id="texto" type="text" />
+            Texto: <input id="texto" type="text" minLength={2} maxLength={255} required />
           </label>
 
           <label htmlFor="inteiro">
-            Inteiro: <input type="number" id="inteiro" />
+            Inteiro: <input type="number" id="inteiro"  min={1} max={1000} required/>
           </label>
 
           <label htmlFor="booleano">
-            Boolean: <input type="checkbox" id="booleano" />
+            Boolean: <input type="checkbox" id="booleano" required/>
           </label>
 
           <label htmlFor="seletor">
-            Select: <select id="seletor">
+            Select: <select id="seletor" required>
                       <option value="1">opcao 1</option>
                       <option value="2">opcao 2</option>
                       <option value="3">opcao 3</option>
@@ -60,7 +60,7 @@ export default function Home() {
           <legend>Radios: </legend>
           <div className="flex flex-col space-y-3">
             <div className="space-x-1">
-              <input type="radio" name="radios" id="radio1" className="w-min" />
+              <input type="radio" name="radios" id="radio1" className="w-min" required/>
               <label htmlFor="radio1">opcao 1</label>
             </div>
 

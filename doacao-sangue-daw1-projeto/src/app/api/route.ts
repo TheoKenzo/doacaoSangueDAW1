@@ -9,12 +9,24 @@ export async function GET(req:NextRequest) {
     const seletor = searchParams.get("seletor")
     const radios = searchParams.get("radios")
 
-    return NextResponse.json({
-        texto,
-        inteiro,
-        booleano,
-        seletor,
+    if(
+        texto?.length as number >= 2 && texto?.length as number <= 255 &&
+        parseInt(inteiro as string) > 0 && parseInt(inteiro as string) < 1000 &&
+        booleano &&
+        seletor &&
         radios
-    });
+        ){
 
+        return NextResponse.json({
+            texto,
+            inteiro,
+            booleano,
+            seletor,
+            radios
+        });
+    }
+
+    return NextResponse.json({
+        error: "Existem valores inválidos."
+    })
 }
