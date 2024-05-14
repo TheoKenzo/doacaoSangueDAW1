@@ -1,0 +1,97 @@
+"use client";
+import { Button } from "@nextui-org/button";
+import { Card, CardBody, CardHeader } from "@nextui-org/card";
+import { Input } from "@nextui-org/input";
+import { Radio, RadioGroup } from "@nextui-org/radio";
+import { Select, SelectItem } from "@nextui-org/select";
+import { RH, TipoSanguineo } from "@prisma/client";
+import Link from "next/link";
+import { FormEvent, useState } from 'react';
+
+export default function Home() {
+  const [nome, setNome] = useState(''); // Estado para armazenar o nome
+  const [cpf, setCpf] = useState(''); // Estado para armazenar o CPF
+  const [contato, setContato] = useState(''); // Estado para armazenar o contato
+  const [tipoSanguineo, setTipoSanguineo] = useState(''); // Estado para armazenar o tipo sanguíneo
+  const [rh, setRh] = useState(''); // Estado para armazenar o RH
+  const [isLoading, setIsLoading] = useState(false); // Estado para rastrear o status de carregamento
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    setIsLoading(true); // Ativa o estado de carregamento antes da solicitação
+
+    const data = {
+      nome,
+      cpf,
+      contato,
+      tipoSanguineo,
+      rh
+    };
+
+    try {
+      const response = await fetch("/api/doador", {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log(result); // Exibe a resposta do servidor no console
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setIsLoading(false); // Desativa o estado de carregamento após a conclusão da solicitação
+    }
+  }
+
+  return (
+    <main className="h-screen flex justify-center items-center">
+      <div className="w-max space-y-3">
+        <Card className="w-[350px]">
+          <CardHeader>
+            <h1 className="w-full text-xl font-bold text-center">
+              Cadastre um Doador
+            </h1>
+          </CardHeader>
+          <CardBody>
+            <form onSubmit={handleSubmit} className="grid gap-3">
+              <Input label="Nome" placeholder="Digite..." onChange={(e) => setNome(e.target.value)}  isRequired/>
+              <Input label="CPF" placeholder="Digite..." onChange={(e) => setCpf(e.target.value)}  isRequired/>
+              <Input label="Contato" placeholder="Digite..." onChange={(e) => setContato(e.target.value)}  isRequired/>
+              <Select label="Tipo Sanguineo" placeholder="Selecione..." onChange={(e) => setTipoSanguineo(e.target.value)} isRequired>
+                {Object.values(TipoSanguineo).map((tipo) => (
+                  <SelectItem key={tipo} value={tipo}>
+                    {tipo}
+                  </SelectItem>
+                ))}
+              </Select>
+              <RadioGroup
+                isRequired
+                label="RH"
+                orientation="horizontal"
+                onChange={(e) => setRh(e.target.value)}
+              >
+                {Object.values(RH).map((tipo) => (
+                  <Radio size="sm" key={tipo} value={tipo}>{tipo}</Radio>
+                ))}
+              </RadioGroup>
+              <Button isLoading={isLoading} type="submit" className="w-max justify-self-center mt-3">Registrar</Button>
+            </form>
+          </CardBody>
+        </Card>
+        <Button>
+          <Link href="/buscaDoador">
+            Buscar
+          </Link>
+        </Button>
+      </div>
+    </main>
+  );
+}
+

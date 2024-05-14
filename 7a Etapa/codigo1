@@ -1,0 +1,158 @@
+import { DoadorRequestPost } from "@/types/doador-request.interface"
+import prisma from "@/lib/db"
+import { Doador, RH, TipoSanguineo } from "@prisma/client"
+import { NextRequest } from "next/server"
+
+export async function GET(req: NextRequest): Promise<Response> {
+    const { searchParams } = req.nextUrl;
+
+    // Inicializa um objeto para armazenar os filtros
+    let filters: Partial<Doador> = {};
+    
+    filters.ativo = true
+
+    // Verifica cada parâmetro e adiciona ao objeto de filtros se estiver definido
+    if (searchParams.get("codigo")) {
+        filters.codigo = Number(searchParams.get("codigo")!);
+    }
+    if (searchParams.get("nome")) {
+        filters.nome = searchParams.get("nome")!;
+    }
+    if (searchParams.get("cpf")) {
+        filters.cpf = searchParams.get("cpf")!;
+    }
+    if (searchParams.get("contato")) {
+        filters.contato = searchParams.get("contato")!;
+    }
+    if ((Object.keys(TipoSanguineo).toString().includes(searchParams.get("tipoSanguineo") ?? "") && searchParams.get("tipoSanguineo") != "todos") ) {
+        filters.tipoSanguineo = TipoSanguineo[searchParams.get("tipoSanguineo") as keyof typeof TipoSanguineo];
+    }
+    if ((Object.keys(RH).toString().includes(searchParams.get("rh") ?? "") && searchParams.get("rh") != "todos")) {
+        filters.rh = RH[searchParams.get("rh") as keyof typeof RH];
+    }
+
+    // Realiza a consulta no banco de dados usando os filtros
+
+    try {
+
+        const doadores = await prisma.doador.findMany({
+            where: filters,
+        });
+
+        return new Response(JSON.stringify({ doadores }), {
+            status: 200,
+        })
+    } catch (error: any) {
+        return new Response(`Webhook error: ${error.message}`, {
+            status: 400,
+        })
+    }
+}
+export async function POST(req: Request) {
+    const { nome, cpf, contato, tipoSanguineo, rh } = await req.json() as DoadorRequestPost
+
+    try {
+
+        if (!(nome && cpf && contato && tipoSanguineo && rh))
+            throw new Error("Valores Invalidos!")
+
+        await prisma.doador.create({
+            data: {
+                nome,
+                cpf,
+                contato,
+                tipoSanguineo: TipoSanguineo[tipoSanguineo as keyof typeof TipoSanguineo],
+                rh: RH[rh as keyof typeof RH],
+                tipoRhCorretos: !(TipoSanguineo[tipoSanguineo as keyof typeof TipoSanguineo] === TipoSanguineo.DESCONHECIDO || RH[rh as keyof typeof RH] === RH.DESCONHECIDO)
+            }
+        })
+
+        return new Response('Success!', {
+            status: 200,
+        })
+    } catch (error: any) {
+        return new Response(`Webhook error: ${error.message}`, {
+            status: 400,
+        })
+    }
+}
+
+export async function DELETE(req: NextRequest): Promise<Response> {
+    const codigo = req.nextUrl.searchParams.get("codigo");
+
+    try {
+        const doadorAtualizado = await prisma.doador.update({
+            where: {
+                codigo: Number(codigo!),
+            },
+            data: {
+                ativo: false
+            }
+        });
+
+        if (!doadorAtualizado) {
+            return new Response('Doador não encontrado', {
+                status: 404,
+            });
+        }
+
+        return new Response('Doador atualizado com sucesso', {
+            status: 200,
+        });
+    } catch (error: any) {
+        return new Response(`Erro ao atualizar doador: ${error.message}`, {
+            status: 400,
+        });
+    }
+}
+
+export async function PUT(req: Request): Promise<Response> {
+    const { codigo, nome, cpf, contato, tipoSanguineo, rh } = await req.json();
+
+    let data: Partial<Doador> = {};
+
+    // Verifica cada parâmetro e adiciona ao objeto de filtros se estiver definido
+    if (codigo) {
+        data.codigo = Number(codigo!);
+    }
+    if (nome) {
+        data.nome = nome!;
+    }
+    if (cpf) {
+        data.cpf = cpf!;
+    }
+    if (contato) {
+        data.contato = contato!;
+    }
+    if ((Object.keys(TipoSanguineo).toString().includes(tipoSanguineo ?? "") && tipoSanguineo != "todos") ) {
+        data.tipoSanguineo = TipoSanguineo[tipoSanguineo as keyof typeof TipoSanguineo];
+    }
+    if ((Object.keys(RH).toString().includes(rh ?? "") && rh != "todos")) {
+        data.rh = RH[rh as keyof typeof RH];
+    }
+    
+    try {
+        const doadorAtualizado = await prisma.doador.update({
+            where: {
+                codigo: data.codigo,
+            },
+            data: data
+        });
+
+        if (!doadorAtualizado) {
+            return new Response('Doador não encontrado', {
+                status: 404,
+            });
+        }
+
+        return new Response('Doador atualizado com sucesso', {
+            status: 200,
+        });
+    } catch (error: any) {
+        return new Response(`Erro ao atualizar doador: ${error.message}`, {
+            status: 400,
+        });
+    }
+}
+
+

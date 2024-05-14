@@ -1,0 +1,163 @@
+"use client";
+import React, { useCallback, useState } from "react";
+import { Button, ButtonGroup } from "@nextui-org/button";
+import { Spinner } from "@nextui-org/spinner";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+} from "@nextui-org/table";
+import { Doador } from "@prisma/client";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation"; // Corrigido para usar useRouter do next/router
+import { AsyncListData, useAsyncList } from "@react-stately/data";
+import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure } from "@nextui-org/modal";
+
+const columns = [
+  {
+    key: "codigo",
+    label: "Codigo",
+  },
+  {
+    key: "nome",
+    label: "Nome",
+  },
+  {
+    key: "tipoSanguineo",
+    label: "Tipo Sanguineo",
+  },
+  {
+    key: "rh",
+    label: "RH",
+  },
+  {
+    key: "act",
+    label: "Ações",
+  },
+];
+
+export default function ResultDoador() {
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const [codigo, setCodigo] = useState(0);
+  const router = useRouter();
+  const path = useSearchParams()
+
+  async function handlerDelete(codigo: number) {
+
+    
+
+    await fetch(`/api/doador?codigo=${codigo}`, {
+      method: "DELETE",
+    })
+
+    return router.refresh()
+   
+  }
+
+  let list: AsyncListData<Doador> = useAsyncList({
+    async load({ signal }) {
+      const url = new URL("http://localhost:3000/api/doador");
+      const res = await fetch(url, { signal, next:{
+        tags: ["doadores"]
+      } });
+      const data = await res.json();
+      return {
+        items: data.doadores,
+      };
+    },
+  });
+
+  const renderCell = useCallback((user: any, columnKey: any) => {
+    const cellValue = user[columnKey];
+
+    switch (columnKey) {
+      case "activo": // Corrigido para "activo" em vez de "ativo"
+        return (
+          <span className={`${cellValue? "text-blue-500" : "text-red-500"}`}>
+            {cellValue? "Sim" : "Não"}
+          </span>
+        );
+      case "act":
+        return (
+          <ButtonGroup>
+            <Button color="primary">
+              <Link href={`/mudaDoador?codigo=${user["codigo"]}`}>Alterar</Link>
+            </Button>
+            <Button onPress={onOpen} color="danger" onClick={() => setCodigo(user["codigo"])}>
+              Deletar
+            </Button>
+          </ButtonGroup>
+        );
+      default:
+        return cellValue;
+    }
+  }, []);
+
+  return (
+    <div className="h-screen flex flex-col justify-center items-center">
+      <div className="space-y-3">
+        <Table
+          aria-label="Example table with dynamic content"
+          className="w-max"
+        >
+          <TableHeader columns={columns}>
+            {(column) => (
+              <TableColumn key={column.key}>{column.label}</TableColumn>
+            )}
+          </TableHeader>
+          <TableBody
+            items={list.items}
+            isLoading={list.isLoading}
+            loadingContent={<Spinner />}
+            emptyContent="Não houve Doadores"
+          >
+            {(item) => (
+              <TableRow key={item.codigo}>
+                {(columnKey) => (
+                  <TableCell>{renderCell(item, columnKey)}</TableCell>
+                )}
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+        <ButtonGroup>
+          <Button>
+            <Link href="/buscaDoador">Voltar</Link>
+          </Button>
+          <Button>
+            <Link href="/">Registrar</Link>
+          </Button>
+        </ButtonGroup>
+      </div>
+      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader>
+                <h1 className="text-red-500">DELETAR DOADOR</h1>
+              </ModalHeader>
+              <ModalBody>
+                <p>
+                  Você tem certeza que deseja <strong className="text-red-500">DELETAR</strong> esse
+                  doador?
+                </p>
+              </ModalBody>
+              <ModalFooter>
+                <Button color="primary" variant="bordered" onPress={onClose}>
+                  Cancelar
+                </Button>
+                <Button color="danger" onPress={onClose} onClick={() => handlerDelete(Number(codigo))}>
+                  Deletar
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+    </div>
+  );
+}
+

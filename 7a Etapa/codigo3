@@ -1,0 +1,109 @@
+"use client";
+import { Button } from "@nextui-org/button";
+import { Card, CardBody, CardHeader } from "@nextui-org/card";
+import { Input } from "@nextui-org/input";
+import { Radio, RadioGroup } from "@nextui-org/radio";
+import { Select, SelectItem } from "@nextui-org/select";
+import { RH, TipoSanguineo } from "@prisma/client";
+import { useRouter } from 'next/navigation'
+import Link from "next/link";
+import { FormEvent, useState } from "react";
+
+export default function BuscaDoador() {
+  const router = useRouter()
+  const [nome, setNome] = useState(""); // Estado para armazenar o nome
+  const [cpf, setCpf] = useState(""); // Estado para armazenar o CPF
+  const [contato, setContato] = useState(""); // Estado para armazenar o contato
+  const [tipoSanguineo, setTipoSanguineo] = useState(""); // Estado para armazenar o tipo sanguíneo
+  const [rh, setRh] = useState(""); // Estado para armazenar o RH // Estado para rastrear o status de carregamento
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault(); // Ativa o estado de carregamento antes da solicitação
+
+    const data = {
+      nome,
+      cpf,
+      contato,
+      tipoSanguineo,
+      rh,
+    };
+
+    const url = new URL('http://localhost:3000/resultDoador');
+
+    // Verifica e adiciona cada parâmetro à URL
+    if (nome) url.searchParams.append('nome', nome);
+    if (cpf) url.searchParams.append('cpf', cpf);
+    if (contato) url.searchParams.append('contato', contato);
+    if (tipoSanguineo) url.searchParams.append('tipoSanguineo', tipoSanguineo);
+    if (rh) url.searchParams.append('rh', rh);
+
+    // Redireciona para a nova URL
+      router.push(url.toString());
+
+  }
+
+  return (
+    <main className="h-screen flex justify-center items-center">
+      <div className="w-max space-y-3">
+        <Card className="w-[350px]">
+          <CardHeader>
+            <h1 className="w-full text-xl font-bold text-center">
+              Busque um Doador
+            </h1>
+          </CardHeader>
+          <CardBody>
+            <form onSubmit={handleSubmit} className="grid gap-3">
+              <Input
+                label="Nome"
+                placeholder="Digite..."
+                onChange={(e) => setNome(e.target.value)}
+              />
+              <Input
+                label="CPF"
+                placeholder="Digite..."
+                onChange={(e) => setCpf(e.target.value)}
+              />
+              <Input
+                label="Contato"
+                placeholder="Digite..."
+                onChange={(e) => setContato(e.target.value)}
+              />
+              <Select
+                label="Tipo Sanguineo"
+                placeholder="Selecione..."
+                onChange={(e) => setTipoSanguineo(e.target.value)}
+              >
+                {Object.values({...TipoSanguineo, todos:"TODOS"}).map((tipo:any) => (
+                    <SelectItem key={tipo} value={tipo}>
+                    {tipo}
+                  </SelectItem>
+                ))}
+              </Select>
+              <RadioGroup
+                label="RH"
+                orientation="horizontal"
+                onChange={(e) => setRh(e.target.value)}
+              >
+                {Object.values(RH).map((tipo) => (
+                  <Radio size="sm" key={tipo} value={tipo}>
+                    {tipo}
+                  </Radio>
+                ))}
+                <Radio size="sm" key="todos" value="todos">TODOS</Radio>
+              </RadioGroup>
+              <Button type="submit" className="w-max justify-self-center mt-3">
+                Buscar
+              </Button>
+            </form>
+          </CardBody>
+        </Card>
+        <Button>
+          <Link href="/">
+            Voltar
+          </Link>
+        </Button>
+      </div>
+    </main>
+  );
+}
+
