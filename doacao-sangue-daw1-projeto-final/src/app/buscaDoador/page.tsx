@@ -1,0 +1,94 @@
+"use client";
+import { Button, ButtonGroup } from "@nextui-org/button";
+import { Card, CardBody, CardFooter, CardHeader } from "@nextui-org/card";
+import { Checkbox } from "@nextui-org/checkbox";
+import { Input } from "@nextui-org/input";
+import { Radio, RadioGroup } from "@nextui-org/radio";
+import { Select, SelectItem } from "@nextui-org/select";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FormEvent } from "react";
+
+export default function BuscaDoador() {
+  const router = useRouter();
+async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    const form = new FormData(event.target as HTMLFormElement);
+    const nome = form.get("nome") as string;
+    const cpf = form.get("cpf") as string;
+    const contato = form.get("contato") as string;
+    const tipoSanguineo = form.get("tipoSanguineo") as string;
+    const rh = form.get("rh") as string;
+
+    const searchParams = new URLSearchParams();
+
+    if (nome) searchParams.append("nome", nome);
+    if (cpf) searchParams.append("cpf", cpf);
+    if (contato) searchParams.append("contato", contato);
+    if (tipoSanguineo && tipoSanguineo != "TODOS") searchParams.append("tipoSanguineo", tipoSanguineo);
+    if (rh && rh != "TODOS") searchParams.append("rh", rh);
+
+    router.push("/resultDoador?" + searchParams.toString());
+
+    // Clear form
+    (event.target as HTMLFormElement).reset();
+}
+  return (
+    <main className="h-screen flex flex-col items-center justify-center gap-y-2">
+      <Card className="w-[400px] h-[490px]">
+        <CardHeader>
+          <h1 className="w-full text-2xl font-bold text-center">
+            Buscar Usuários
+          </h1>
+        </CardHeader>
+        <CardBody>
+          <form onSubmit={handleSubmit} className="space-y-4 grid">
+            <Input label="Nome" name="nome" placeholder="Digite seu nome" />
+            <Input label="CPF" name="cpf" placeholder="Digite seu CPF" />
+            <Input
+              label="Contato"
+              name="contato"
+              placeholder="Digite seu contato"
+            />
+            <Select
+              label="Tipo Sanguíneo"
+              placeholder="Selecione"
+              name="tipoSanguineo"
+              defaultSelectedKeys={["TODOS"]}
+            >
+              <SelectItem key="A" value="A">
+                A
+              </SelectItem>
+              <SelectItem key="B" value="B">
+                B
+              </SelectItem>
+              <SelectItem key="AB" value="AB">
+                AB
+              </SelectItem>
+              <SelectItem key="O" value="O">
+                O
+              </SelectItem>
+              <SelectItem key="TODOS" value="TODOS">
+                Todos
+                </SelectItem>
+            </Select>
+            <RadioGroup name="rh" label="Rh" orientation="horizontal" defaultValue="TODOS">
+              <Radio key="positivo" value="POSITIVO">
+                Positivo
+              </Radio>
+              <Radio key="negativo" value="NEGATIVO">
+                Negativo
+              </Radio>
+              <Radio key="todos" value="TODOS">
+                Todos
+              </Radio>
+            </RadioGroup>
+            <Button type="submit" className="justify-self-center">
+                Buscar  
+            </Button>
+          </form>
+        </CardBody>
+      </Card>
+    </main>
+  );
+}

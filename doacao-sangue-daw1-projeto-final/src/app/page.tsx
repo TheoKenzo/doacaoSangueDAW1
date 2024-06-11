@@ -1,0 +1,129 @@
+"use client";
+import { Button, ButtonGroup } from "@nextui-org/button";
+import { Card, CardBody, CardFooter, CardHeader } from "@nextui-org/card";
+import { Checkbox } from "@nextui-org/checkbox";
+import { Input } from "@nextui-org/input";
+import { Radio, RadioGroup } from "@nextui-org/radio";
+import { Select, SelectItem } from "@nextui-org/select";
+import Link from "next/link";
+import { FormEvent, useState } from "react";
+
+export default function Home() {
+  const [pending, setPending] = useState(false);
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    setPending(true);
+    const form = new FormData(event.target as HTMLFormElement);
+    const nome = form.get("nome") as string;
+    const cpf = form.get("cpf") as string;
+    const contato = form.get("contato") as string;
+    const tipoSanguineo = form.get("tipoSanguineo") as string;
+    const rh = form.get("rh") as string;
+    const tipoRhCorretos = form.get("tipoRhCorretos") as string;
+
+    console.log({
+      nome,
+      cpf,
+      contato,
+      tipoSanguineo,
+      rh,
+      tipoRhCorretos,
+    });
+
+    const response = await fetch("/api/doador", {
+      method: "POST",
+      body: JSON.stringify({
+        nome,
+        cpf,
+        contato,
+        tipoSanguineo,
+        rh,
+        tipoRhCorretos,
+      }),
+    });
+
+    setPending(false);
+
+    // Clear form
+    (event.target as HTMLFormElement).reset();
+
+    if (response.ok) {
+      alert("Doador cadastrado com sucesso");
+    } else {
+      alert("Erro ao cadastrar doador");
+    }
+  }
+
+  return (
+    <main>
+      <Card className="w-[400px] h-max py-2">
+        <CardHeader>
+          <h1 className="w-full text-2xl font-bold text-center">
+            Cadastrar Usuário
+          </h1>
+        </CardHeader>
+        <CardBody>
+          <form onSubmit={handleSubmit} className="space-y-4 grid">
+            <Input
+              label="Nome"
+              name="nome"
+              placeholder="Digite seu nome"
+              isRequired
+            />
+            <Input
+              label="CPF"
+              name="cpf"
+              placeholder="Digite seu CPF"
+              isRequired
+            />
+            <Input
+              label="Contato"
+              name="contato"
+              placeholder="Digite seu contato"
+              isRequired
+            />
+            <Select
+              label="Tipo Sanguíneo"
+              placeholder="Selecione"
+              name="tipoSanguineo"
+              isRequired
+            >
+              <SelectItem key="A" value="A">
+                A
+              </SelectItem>
+              <SelectItem key="B" value="B">
+                B
+              </SelectItem>
+              <SelectItem key="AB" value="AB">
+                AB
+              </SelectItem>
+              <SelectItem key="O" value="O">
+                O
+              </SelectItem>
+            </Select>
+            <RadioGroup
+              name="rh"
+              label="Rh"
+              orientation="horizontal"
+              isRequired
+            >
+              <Radio key="positivo" value="POSITIVO">
+                Positivo
+              </Radio>
+              <Radio key="negativo" value="NEGATIVO">
+                Negativo
+              </Radio>
+            </RadioGroup>
+            <Checkbox className="block" name="tipoRhCorretos" value="true">
+              Tipo Sanguíneo e Rh corretos
+            </Checkbox>
+            <Button type="submit" className="justify-self-center" isLoading={pending}>
+              Cadastrar
+            </Button>
+          </form>
+        </CardBody>
+      </Card>
+    </main>
+  );
+}

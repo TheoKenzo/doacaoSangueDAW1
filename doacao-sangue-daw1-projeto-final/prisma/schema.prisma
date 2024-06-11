@@ -1,0 +1,51 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TipoSanguineo {
+  A
+  B
+  AB
+  O
+  DESCONHECIDO
+}
+
+enum RH {
+  POSITIVO
+  NEGATIVO
+  DESCONHECIDO
+}
+
+model Doador {
+  codigo         Int           @id @default(autoincrement())
+  nome           String        @db.VarChar(255)
+  cpf            String        @db.VarChar(11)
+  contato        String        
+  tipoSanguineo  TipoSanguineo
+  rh             RH
+  tipoRhCorretos Boolean
+  ativo          Boolean       @default(true)
+  Doacao         Doacao[]
+}
+
+model Doacao {
+  codigo   Int      @id @default(autoincrement())
+  data     String  
+  hora     String  
+  volume   Float
+  tipoSanguineo  TipoSanguineo
+  rh             RH
+  doador   Doador   @relation(fields: [authorId], references: [codigo])
+  authorId Int     
+}

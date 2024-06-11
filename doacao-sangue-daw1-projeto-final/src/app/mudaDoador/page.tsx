@@ -1,0 +1,140 @@
+"use client";
+import { Button, ButtonGroup } from "@nextui-org/button";
+import { Card, CardBody, CardFooter, CardHeader } from "@nextui-org/card";
+import { Checkbox } from "@nextui-org/checkbox";
+import { Input } from "@nextui-org/input";
+import { Radio, RadioGroup } from "@nextui-org/radio";
+import { Select, SelectItem } from "@nextui-org/select";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { FormEvent, use, useEffect } from "react";
+
+export default function MudaDoador() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const codigo = searchParams.get("codigo");
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    const form = new FormData(event.target as HTMLFormElement);
+    const inputCodigo = form.get("codigo") as string;
+    const nome = form.get("nome") as string;
+    const cpf = form.get("cpf") as string;
+    const contato = form.get("contato") as string;
+    const tipoSanguineo = form.get("tipoSanguineo") as string;
+    const rh = form.get("rh") as string;
+    const tipoRhCorretos = form.get("tipoRhCorretos") as string;
+
+    const response = await fetch("/api/doador", {
+      method: "PUT",
+      body: JSON.stringify({
+        inputCodigo,
+        codigo,
+        nome,
+        cpf,
+        contato,
+        tipoSanguineo,
+        rh,
+        tipoRhCorretos,
+      }),
+    });
+
+    router.push(`/resultDoador?codigo=${inputCodigo}`);
+
+    if (response.ok) {
+      alert("Doador alterado com sucesso");
+    } else {
+      alert("Erro ao alterar doador");
+    }
+  }
+
+  useEffect(() => {
+    const codigo = searchParams.get("codigo");
+    if (codigo) {
+      fetch(`/api/doador?codigo=${codigo}`)
+        .then((response) => response.json())
+        .then((data) => {
+          const form = document.querySelector("form") as HTMLFormElement;
+          form.nome.value = data.nome;
+          form.cpf.value = data.cpf;
+          form.contato.value = data.contato;
+          form.tipoSanguineo.value = data.tipoSanguineo;
+          form.rh.value = data.rh;
+          form.tipoRhCorretos.checked = data.tipoRhCorretos;
+        });
+    }
+  },[searchParams]);
+  return (
+    <main>
+      <Card className="w-[400px] h-max py-2">
+        <CardHeader>
+          <h1 className="w-full text-2xl font-bold text-center">
+            Mudar Usuário
+          </h1>
+        </CardHeader>
+        <CardBody>
+          <form onSubmit={handleSubmit} className="space-y-4 grid">
+            <Input
+              label="Código"
+              name="codigo"
+              placeholder="Digite seu código"
+              defaultValue={codigo?.toString() ?? ""}
+              />
+
+            <Input
+              label="Nome"
+              name="nome"
+              placeholder="Digite seu nome"
+            />
+            <Input
+              label="CPF"
+              name="cpf"
+              placeholder="Digite seu CPF"
+            />
+            <Input
+              label="Contato"
+              name="contato"
+              placeholder="Digite seu contato"
+            />
+            <Select
+              label="Tipo Sanguíneo"
+              placeholder="Selecione"
+              name="tipoSanguineo"
+            >
+              <SelectItem key="A" value="A">
+                A
+              </SelectItem>
+              <SelectItem key="B" value="B">
+                B
+              </SelectItem>
+              <SelectItem key="AB" value="AB">
+                AB
+              </SelectItem>
+              <SelectItem key="O" value="O">
+                O
+              </SelectItem>
+            </Select>
+            <RadioGroup
+              name="rh"
+              label="Rh"
+              orientation="horizontal"
+            >
+              <Radio key="positivo" value="POSITIVO">
+                Positivo
+              </Radio>
+              <Radio key="negativo" value="NEGATIVO">
+                Negativo
+              </Radio>
+            </RadioGroup>
+            <Checkbox className="block" name="tipoRhCorretos" value="true">
+              Tipo Sanguíneo e Rh corretos
+            </Checkbox>
+            <Button type="submit" className="justify-self-center">
+              Mudar
+            </Button>
+          </form>
+        </CardBody>
+      </Card>
+    </main>
+  );
+}
