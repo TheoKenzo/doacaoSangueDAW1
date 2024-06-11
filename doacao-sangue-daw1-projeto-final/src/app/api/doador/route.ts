@@ -41,8 +41,12 @@ export async function GET(req: NextRequest){
     const doadores = await prisma.doador.findMany({
         where: {
             ...filtros,
-            ativo: true
-        }
+            ativo: true,
+            nome: {
+                contains: filtros.nome
+            }
+        },
+        
     });
 
     return new Response(JSON.stringify(doadores), {

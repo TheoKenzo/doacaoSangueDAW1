@@ -1,163 +1,92 @@
 "use client";
-import React, { useCallback, useState } from "react";
-import { Button, ButtonGroup } from "@nextui-org/button";
-import { Spinner } from "@nextui-org/spinner";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-} from "@nextui-org/table";
-import { Doador } from "@prisma/client";
+import { useSearchParams } from "next/navigation";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@nextui-org/table";
+import { Button } from "@nextui-org/button";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation"; // Corrigido para usar useRouter do next/router
-import { AsyncListData, useAsyncList } from "@react-stately/data";
-import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure } from "@nextui-org/modal";
+import { Pagination } from "@nextui-org/pagination";
+import { Spinner } from "@nextui-org/spinner";
+import { Doacao } from "@prisma/client";
 
 const columns = [
-  {
-    key: "codigo",
-    label: "Codigo",
-  },
-  {
-    key: "nome",
-    label: "Nome",
-  },
-  {
-    key: "tipoSanguineo",
-    label: "Tipo Sanguineo",
-  },
-  {
-    key: "rh",
-    label: "RH",
-  },
-  {
-    key: "act",
-    label: "Ações",
-  },
+  { key: "codigo", label: "Código" },
+  { key: "nome", label: "Nome do Doador" },
+  { key: "volume", label: "Volume (mL)" },
+  { key: "tipoSanguineo", label: "Tipo Sanguíneo (com RH)" },
+  { key: "data", label: "Data" },
 ];
 
 export default function ResultDoador() {
-  const { isOpen, onOpen, onOpenChange } = useDisclosure();
-  const [codigo, setCodigo] = useState(0);
-  const router = useRouter();
-  const path = useSearchParams()
+  const searchParams = useSearchParams();
+  const [doacoes, setDoacoes] = useState<Doacao[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const rowsPerPage = 7;
 
-  async function handlerDelete(codigo: number) {
+  useEffect(() => {
+    const fetchDoadores = async () => {
+      const response = await fetch("/api/doacao?" + searchParams.toString());
+      let data: Doacao[] = await response.json();
+      const start = searchParams.get("start");
+      const end = searchParams.get("end");
+      if (start && end) {
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        data = data.filter((doacao) => {
+          const doacaoDate = new Date(doacao.data);
+          return doacaoDate >= startDate && doacaoDate <= endDate;
+        });
+      }
+      setDoacoes(data);
+      setLoading(false);
+    };
 
-    
+    fetchDoadores();
+  }, [searchParams]);
 
-    await fetch(`/api/doador?codigo=${codigo}`, {
-      method: "DELETE",
-    })
+  const items = useMemo(() => {
+    const start = (page - 1) * rowsPerPage;
+    return doacoes.slice(start, start + rowsPerPage);
+  }, [page, doacoes]);
 
-    return router.refresh()
-   
-  }
-
-  let list: AsyncListData<Doador> = useAsyncList({
-    async load({ signal }) {
-      const url = new URL("http://localhost:3000/api/doador");
-      const res = await fetch(url, { signal, next:{
-        tags: ["doadores"]
-      } });
-      const data = await res.json();
-      return {
-        items: data.doadores,
-      };
-    },
-  });
-
-  const renderCell = useCallback((user: any, columnKey: any) => {
-    const cellValue = user[columnKey];
-
+  const renderCell = useCallback((doacao:any, columnKey:any) => {
+    const cellValue = doacao[columnKey];
     switch (columnKey) {
-      case "activo": // Corrigido para "activo" em vez de "ativo"
-        return (
-          <span className={`${cellValue? "text-blue-500" : "text-red-500"}`}>
-            {cellValue? "Sim" : "Não"}
-          </span>
-        );
-      case "act":
-        return (
-          <ButtonGroup>
-            <Button color="primary">
-              <Link href={`/mudaDoador?codigo=${user["codigo"]}`}>Alterar</Link>
-            </Button>
-            <Button onPress={onOpen} color="danger" onClick={() => setCodigo(user["codigo"])}>
-              Deletar
-            </Button>
-          </ButtonGroup>
-        );
+      case "tipoSanguineo":
+        return <span className="w-full text-center">{`${cellValue} ${doacao.rh === "POSITIVO" ? "+" : "-"}`}</span>;
+      case "nome":
+        return <span className="w-full text-center">{doacao.doador.nome}</span>;
+      case "data":
+        return <span className="w-full text-center">{`${doacao.data.split("-").reverse().join("/")} ${doacao.hora.slice(0, 5)}`}</span>;
       default:
         return cellValue;
     }
   }, []);
 
   return (
-    <div className="h-screen flex flex-col justify-center items-center">
-      <div className="space-y-3">
-        <Table
-          aria-label="Example table with dynamic content"
-          className="w-max"
-        >
-          <TableHeader columns={columns}>
-            {(column) => (
-              <TableColumn key={column.key}>{column.label}</TableColumn>
-            )}
-          </TableHeader>
-          <TableBody
-            items={list.items}
-            isLoading={list.isLoading}
-            loadingContent={<Spinner />}
-            emptyContent="Não houve Doadores"
-          >
-            {(item) => (
-              <TableRow key={item.codigo}>
-                {(columnKey) => (
-                  <TableCell>{renderCell(item, columnKey)}</TableCell>
-                )}
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-        <ButtonGroup>
-          <Button>
-            <Link href="/buscaDoador">Voltar</Link>
-          </Button>
-          <Button>
-            <Link href="/">Registrar</Link>
-          </Button>
-        </ButtonGroup>
-      </div>
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>
-                <h1 className="text-red-500">DELETAR DOADOR</h1>
-              </ModalHeader>
-              <ModalBody>
-                <p>
-                  Você tem certeza que deseja <strong className="text-red-500">DELETAR</strong> esse
-                  doador?
-                </p>
-              </ModalBody>
-              <ModalFooter>
-                <Button color="primary" variant="bordered" onPress={onClose}>
-                  Cancelar
-                </Button>
-                <Button color="danger" onPress={onClose} onClick={() => handlerDelete(Number(codigo))}>
-                  Deletar
-                </Button>
-              </ModalFooter>
-            </>
+    <main>
+      {loading ? (
+        <Spinner className="mb-3" />
+      ) : (
+        <>
+          <Table className="w-[800px] h-[500px]" topContent={<Button className="w-max"><Link href="/resultDoacao">Tirar Filtros</Link></Button>}>
+            <TableHeader columns={columns}>
+              {column => <TableColumn key={column.key}>{column.label}</TableColumn>}
+            </TableHeader>
+            <TableBody items={items}>
+              {item => (
+                <TableRow key={item.codigo}>
+                  {columnKey => <TableCell>{renderCell(item, columnKey)}</TableCell>}
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+          {Math.ceil(doacoes.length / rowsPerPage) > 1 && (
+            <Pagination page={page} total={Math.ceil(doacoes.length / rowsPerPage)} onChange={setPage} />
           )}
-        </ModalContent>
-      </Modal>
-    </div>
+        </>
+      )}
+    </main>
   );
 }
 
